@@ -99,6 +99,9 @@ mod post {
             let colon_idx = colon_idx.unwrap();
             let key = &text[0..colon_idx].trim();
             let value = &text[colon_idx+1..].trim();
+            if key.len() == 0 || value.len() == 0 {
+                return Err(PostParseError::NotAHeader(text.to_string()));
+            }
             Ok(Self{text: text.to_string(), key: key.to_string(), value: value.to_string()})
         }
     }
@@ -130,6 +133,15 @@ mod post {
             assert_eq!(h.key, "Alpha Bet");
             assert_eq!(h.value, "Soup Four");
         }
+
+        #[test]
+        fn invalid() {
+            for text in vec!["nocolon", "", ":"] {
+                let h = HeaderLine::new(text);
+                assert!(h.is_err());
+            }
+        }
+    }
     }
 }
 
