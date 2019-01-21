@@ -32,7 +32,7 @@ mod post {
 
     #[derive(Debug)]
     pub struct File {
-        pub headers: Vec<HeaderLine>,
+        headers: Vec<HeaderLine>,
         text: String, // All text in file
         body: String, // Only after header and seperator
     }
@@ -64,6 +64,19 @@ mod post {
             f.body = body_lines.join("\n");
             Ok(f)
         }
+        pub fn get_header(&self, key: &str) -> Option<String> {
+            let key = key.to_lowercase();
+            for h in &self.headers {
+                if h.key.to_lowercase() == key {
+                    return Some(h.value.clone());
+                }
+            }
+            None
+        }
+
+        pub fn has_header(&self, key: &str) -> bool {
+            self.get_header(key).is_some()
+        }
     }
     impl ToString for File {
         fn to_string(&self) -> String {
@@ -72,7 +85,7 @@ mod post {
     }
 
     #[derive(Debug)]
-    pub struct HeaderLine {
+    struct HeaderLine {
         text: String,
         key: String,
         value: String,
@@ -106,5 +119,8 @@ fn main() {
         println!("ERROR: {}", pf.unwrap_err());
         return;
     }
+    let pf = pf.unwrap();
+    assert!(pf.has_header("title"));
+    println!("{}", pf.get_header("author").unwrap());
     println!("OK");
 }
