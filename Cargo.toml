@@ -5,3 +5,4 @@ authors = ["Matt Traudt <sirmatt@ksu.edu>"]
 edition = "2018"
 
 [dependencies]
+tini = "0.2.0"
