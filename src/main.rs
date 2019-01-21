@@ -5,6 +5,7 @@ mod post {
     #[derive(Debug)]
     pub enum PostParseError {
         IOError(std::io::Error),
+        NotAHeader(String),
         //Misc(),
     }
     impl fmt::Display for PostParseError {
@@ -12,6 +13,9 @@ mod post {
             let t = match self {
                 &PostParseError::IOError(ref e) => {
                     format!("IOError: {}", e)
+                }
+                &PostParseError::NotAHeader(ref e) => {
+                    format!("NotAHeader: {}", e)
                 }
                 //&PostParseError::Misc() => {
                 //    String::from("Miscelaneous post parsing error")
@@ -28,7 +32,7 @@ mod post {
 
     #[derive(Debug)]
     pub struct File {
-        headers: Vec<HeaderLine>,
+        pub headers: Vec<HeaderLine>,
         text: String, // All text in file
         body: String, // Only after header and seperator
     }
@@ -51,7 +55,7 @@ mod post {
                         doing_headers = false;
                         continue;
                     }
-                    f.headers.push(HeaderLine::new(line));
+                    f.headers.push(HeaderLine::new(line)?);
                 } else {
                     body_lines.push(line);
                 }
@@ -68,14 +72,21 @@ mod post {
     }
 
     #[derive(Debug)]
-    struct HeaderLine {
+    pub struct HeaderLine {
         text: String,
         key: String,
         value: String,
     }
     impl HeaderLine {
-        pub fn new(text: &str) -> Self {
-            Self{text: text.to_string(), key: String::new(), value: String::new()}
+        pub fn new(text: &str) -> Result<Self, PostParseError> {
+            let colon_idx = text.find(':');
+            if colon_idx.is_none() {
+                return Err(PostParseError::NotAHeader(text.to_string()));
+            }
+            let colon_idx = colon_idx.unwrap();
+            let key = &text[0..colon_idx].trim();
+            let value = &text[colon_idx+1..].trim();
+            Ok(Self{text: text.to_string(), key: key.to_string(), value: value.to_string()})
         }
     }
     impl ToString for HeaderLine {
@@ -91,5 +102,9 @@ fn main() {
     let text = "Title: How I Met Your Mother\n#Date: Please\nAuthor: Jake 'n Josh\n\nHi\nthere bob\n\n\n    boyo";
     let br = BufReader::new(text.as_bytes());
     let pf = post::File::new_from_buf(Box::new(br));
-    println!("{}", pf.unwrap().to_string());
+    if pf.is_err() {
+        println!("ERROR: {}", pf.unwrap_err());
+        return;
+    }
+    println!("OK");
 }
