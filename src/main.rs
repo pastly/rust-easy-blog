@@ -136,7 +136,7 @@ mod post {
 
         #[test]
         fn invalid() {
-            for text in vec!["nocolon", "", ":"] {
+            for text in vec!["nocolon", "", ":", "a:", ":b"] {
                 let h = HeaderLine::new(text);
                 assert!(h.is_err());
             }
