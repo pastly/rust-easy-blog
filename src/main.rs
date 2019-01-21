@@ -107,6 +107,30 @@ mod post {
             self.text.clone()
         }
     }
+
+    #[cfg(test)]
+    mod headerline_tests {
+        use super::HeaderLine;
+
+        #[test]
+        fn trimming() {
+            let test = |h: HeaderLine| {
+                assert_eq!(h.key, "aaaa");
+                assert_eq!(h.value, "bbbb");
+            };
+            for text in vec!["aaaa:bbbb", "aaaa: bbbb", " aaaa : bbbb "] {
+                let h = HeaderLine::new(text).unwrap();
+                test(h);
+            }
+        }
+
+        #[test]
+        fn multiword() {
+            let h = HeaderLine::new("Alpha Bet: Soup Four").unwrap();
+            assert_eq!(h.key, "Alpha Bet");
+            assert_eq!(h.value, "Soup Four");
+        }
+    }
 }
 
 use std::io::BufReader;
