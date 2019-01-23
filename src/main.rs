@@ -5,8 +5,8 @@ mod util;
 extern crate structopt;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 extern crate config;
+extern crate env_logger;
 
 use std::path::{Path, PathBuf};
 
@@ -14,7 +14,7 @@ use config::{Config, File};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name="reb")]
+#[structopt(name = "reb")]
 struct Args {
     //#[structopt(short="v", long="verbose", parse(from_occurrences))]
     ///// Say more things, repeat to make reb even louder
@@ -24,17 +24,17 @@ struct Args {
 }
 #[derive(StructOpt, Debug)]
 enum CommandArgs {
-    #[structopt(name="init")]
+    #[structopt(name = "init")]
     /// Initialize a directory for reb
     Init {
-        #[structopt(short="f", long="force")]
+        #[structopt(short = "f", long = "force")]
         /// Force overwriting existing config
         force: bool,
     },
-    #[structopt(name="build")]
+    #[structopt(name = "build")]
     /// Update the compiled blog
     Build {
-        #[structopt(short="r", long="rebuild")]
+        #[structopt(short = "r", long = "rebuild")]
         /// Force a rebuild of all output files
         rebuild: bool,
     },
@@ -61,10 +61,16 @@ fn get_config() -> Result<Config, String> {
 
 fn search_path(exe: &Path) -> Option<PathBuf> {
     std::env::var_os("PATH").and_then(|paths| {
-        std::env::split_paths(&paths).filter_map(|dir| {
-            let p = dir.join(&exe);
-            if p.is_file() { Some(p) } else { None }
-        }).next()
+        std::env::split_paths(&paths)
+            .filter_map(|dir| {
+                let p = dir.join(&exe);
+                if p.is_file() {
+                    Some(p)
+                } else {
+                    None
+                }
+            })
+            .next()
     })
 }
 
@@ -99,8 +105,8 @@ fn main() -> Result<(), String> {
     let mut conf = get_config()?;
     normalize_config(&mut conf)?;
     match args.cmd {
-        CommandArgs::Init{force} => init(args, conf),
-        CommandArgs::Build{rebuild} => build(args, conf),
+        CommandArgs::Init { force } => init(args, conf),
+        CommandArgs::Build { rebuild } => build(args, conf),
     }
 
     //let fnames = fs::recursive_find_files(&Path::new("./testdata"));

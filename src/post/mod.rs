@@ -7,20 +7,12 @@ use std::fmt;
 pub enum PostParseError {
     IOError(std::io::Error),
     NotAHeader(String),
-    //Misc(),
 }
 impl fmt::Display for PostParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let t = match self {
-            &PostParseError::IOError(ref e) => {
-                format!("IOError: {}", e)
-            }
-            &PostParseError::NotAHeader(ref e) => {
-                format!("NotAHeader: {}", e)
-            }
-            //&PostParseError::Misc() => {
-            //    String::from("Miscelaneous post parsing error")
-            //}
+            &PostParseError::IOError(ref e) => format!("IOError: {}", e),
+            &PostParseError::NotAHeader(ref e) => format!("NotAHeader: {}", e),
         };
         write!(f, "{}", t)
     }

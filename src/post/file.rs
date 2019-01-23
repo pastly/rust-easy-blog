@@ -1,5 +1,5 @@
-use super::PostParseError;
 use super::header::HeaderLine;
+use super::PostParseError;
 use std::io::BufRead;
 
 #[derive(Debug)]
@@ -10,7 +10,11 @@ pub struct File {
 }
 impl File {
     fn new() -> Self {
-        Self{headers: vec![], text: String::new(), body: String::new()}
+        Self {
+            headers: vec![],
+            text: String::new(),
+            body: String::new(),
+        }
     }
     pub fn new_from_buf(buf: Box<BufRead>) -> Result<Self, PostParseError> {
         let mut f = Self::new();
@@ -22,7 +26,9 @@ impl File {
             all_lines.push(line.clone());
             if doing_headers {
                 let line = line.trim();
-                if line.starts_with('#') { continue; }
+                if line.starts_with('#') {
+                    continue;
+                }
                 if line.len() == 0 {
                     doing_headers = false;
                     continue;
@@ -56,11 +62,10 @@ impl ToString for File {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::io::BufReader;
     use super::File;
+    use std::io::BufReader;
 
     #[test]
     fn no_headers() {
@@ -94,4 +99,3 @@ mod tests {
         assert_eq!(pf.get_header("aaaa"), None);
     }
 }
-

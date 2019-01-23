@@ -1,6 +1,6 @@
-use std::fs::{self};
-use std::path::{Path, PathBuf};
 use std::collections::VecDeque;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Find all files that are in *d* or in some subdir of *d*, performing a breadth first search
 pub fn recursive_find_files(d: &Path) -> Vec<PathBuf> {
@@ -11,10 +11,14 @@ pub fn recursive_find_files(d: &Path) -> Vec<PathBuf> {
         let path = q.pop_front().unwrap();
         let new_dirs = fs::read_dir(path);
         // Ignore dir if there was an issue reading it
-        if new_dirs.is_err() { continue; }
+        if new_dirs.is_err() {
+            continue;
+        }
         for entry in new_dirs.unwrap() {
             // Ignore entry if there was an issue getting it
-            if entry.is_err() { continue; }
+            if entry.is_err() {
+                continue;
+            }
             let path = entry.unwrap().path();
             if path.is_dir() {
                 q.push_back(PathBuf::from(path));
