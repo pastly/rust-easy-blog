@@ -10,9 +10,9 @@ pub enum PostParseError {
 }
 impl fmt::Display for PostParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let t = match self {
-            &PostParseError::IOError(ref e) => format!("IOError: {}", e),
-            &PostParseError::NotAHeader(ref e) => format!("NotAHeader: {}", e),
+        let t = &match self {
+            PostParseError::IOError(ref e) => format!("IOError: {}", e),
+            PostParseError::NotAHeader(ref e) => format!("NotAHeader: {}", e),
         };
         write!(f, "{}", t)
     }

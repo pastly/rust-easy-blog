@@ -21,9 +21,9 @@ pub fn recursive_find_files(d: &Path) -> Vec<PathBuf> {
             }
             let path = entry.unwrap().path();
             if path.is_dir() {
-                q.push_back(PathBuf::from(path));
+                q.push_back(path);
             } else {
-                v.push(PathBuf::from(path));
+                v.push(path);
             }
         }
     }

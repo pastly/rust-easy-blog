@@ -29,7 +29,7 @@ impl File {
                 if line.starts_with('#') {
                     continue;
                 }
-                if line.len() == 0 {
+                if line.is_empty() {
                     doing_headers = false;
                     continue;
                 }

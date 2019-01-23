@@ -15,7 +15,7 @@ impl HeaderLine {
         let colon_idx = colon_idx.unwrap();
         let key = &text[0..colon_idx].trim();
         let value = &text[colon_idx + 1..].trim();
-        if key.len() == 0 || value.len() == 0 {
+        if key.is_empty() || value.is_empty() {
             return Err(PostParseError::NotAHeader(text.to_string()));
         }
         Ok(Self {

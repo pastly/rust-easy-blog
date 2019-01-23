@@ -1,7 +1,7 @@
 mod post;
 mod util;
 
-#[macro_use]
+//#[macro_use]
 extern crate structopt;
 #[macro_use]
 extern crate log;
@@ -81,20 +81,19 @@ fn normalize_config(conf: &mut Config) -> Result<(), String> {
     for key in ["paths.parse_bin"].iter() {
         let value = conf.get_str(key).unwrap();
         let s = Path::new(&value);
-        let mut final_s = String::new();
-        // If it exists in the current directory, use that
-        if s.is_file() {
-            final_s = String::from("./") + s.to_str().unwrap();
-        // Otherwise search path
+        let final_s = if s.is_file() {
+            // If it exists in the current directory, use that
+            String::from("./") + s.to_str().unwrap()
         } else {
+            // Otherwise search path
             let s = search_path(s);
             if s.is_none() {
                 return Err(format!("Could not find {} for key={} in PATH", value, key));
             }
-            final_s = s.unwrap().to_str().unwrap().to_string();
-        }
+            s.unwrap().to_str().unwrap().to_string()
+        };
         debug!("Found {:?} for parse_bin", final_s);
-        conf.set::<String>("paths.parse_bin", final_s);
+        conf.set::<String>("paths.parse_bin", final_s).unwrap();
     }
     Ok(())
 }
