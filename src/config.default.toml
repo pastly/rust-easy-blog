@@ -1,0 +1,10 @@
+[strings]
+blog_title = "My First Blog"
+blog_subtitle = "Where I write about things and stuff"
+blog_author = "John Doe"
+
+[paths]
+post_dname = "posts"
+build_dname = "build"
+# Can also be /path/to/parser
+parse_bin = "cmark"

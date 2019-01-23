@@ -6,10 +6,11 @@ extern crate structopt;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+extern crate config;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use tini::Ini;
+use config::{Config, File};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -39,62 +40,68 @@ enum CommandArgs {
     },
 }
 
-fn init(args: Args) -> Result<(), String> {
+fn init(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling init with {:?}", args);
-    let path = Path::new("reb.ini");
-    let force = match &args.cmd {
-        CommandArgs::Init{force} => force,
-        _ => unreachable!(),
-    };
-    if path.exists() && !force {
-        let path = path.to_str().unwrap();
-        let s = format!("{} exists and refusing to overwrite it", path);
-        error!("{}", s);
-        return Err(s);
-    }
-    let path = path.to_str().unwrap();
-    info!("Writing default config to {}", path);
-    Ini::from_buffer("
-[strings]
-blog_title = My First BLog
-blog_subtitle = Where I write about things and stuff
-blog_author = John Doe
-
-[paths]
-post_dname = posts
-build_dname = build
-").to_file(path);
-    //if path.exists() && !args.cmd.force {
-    //    error!("{} exists and refusing to overwrite it", path.to_str().unwrap());
-    //}
-    //let config = get_default_config();
     Ok(())
 }
 
-fn build(args: Args) -> Result<(), String> {
+fn build(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling build with {:?}", args);
+    Ok(())
+}
+
+fn get_config() -> Result<Config, String> {
+    let mut conf = Config::new();
+    let ok = conf.merge(File::with_name("src/config.default.toml"));
+    if ok.is_err() {
+        return Err(ok.unwrap_err().to_string());
+    }
+    Ok(conf)
+}
+
+fn search_path(exe: &Path) -> Option<PathBuf> {
+    std::env::var_os("PATH").and_then(|paths| {
+        std::env::split_paths(&paths).filter_map(|dir| {
+            let p = dir.join(&exe);
+            if p.is_file() { Some(p) } else { None }
+        }).next()
+    })
+}
+
+// Only returns Ok(..) if the config is well-formed.
+fn normalize_config(conf: &mut Config) -> Result<(), String> {
+    // Find various executables. First search in the current working directory, then fall back to
+    // searching the PATH
+    for key in ["paths.parse_bin"].iter() {
+        let value = conf.get_str(key).unwrap();
+        let s = Path::new(&value);
+        let mut final_s = String::new();
+        // If it exists in the current directory, use that
+        if s.is_file() {
+            final_s = String::from("./") + s.to_str().unwrap();
+        // Otherwise search path
+        } else {
+            let s = search_path(s);
+            if s.is_none() {
+                return Err(format!("Could not find {} for key={} in PATH", value, key));
+            }
+            final_s = s.unwrap().to_str().unwrap().to_string();
+        }
+        debug!("Found {:?} for parse_bin", final_s);
+        conf.set::<String>("paths.parse_bin", final_s);
+    }
     Ok(())
 }
 
 fn main() -> Result<(), String> {
     env_logger::init();
     let args = Args::from_args();
+    let mut conf = get_config()?;
+    normalize_config(&mut conf)?;
     match args.cmd {
-        CommandArgs::Init{force} => init(args),
-        CommandArgs::Build{rebuild} => build(args),
+        CommandArgs::Init{force} => init(args, conf),
+        CommandArgs::Build{rebuild} => build(args, conf),
     }
-    //let conf = Ini::from_buffer(
-    //    vec!["[strings]",
-    //    "blog_title = My First Blog",
-    //    "blog_subtitle = Where I write about things and stuff",
-    //    "blog_author = John Doe",
-    //    "[paths]",
-    //    "post_dname = posts",
-    //    "build_dname = build",
-    //    ].join("\n"));
-    //conf.to_file("conf.ini");
-    //let s: String = conf.get("strings", "blog_title").unwrap();
-    //println!("{}", s);
 
     //let fnames = fs::recursive_find_files(&Path::new("./testdata"));
     //let fnames = fs::paths_with_extension(&fnames, ".reb");
