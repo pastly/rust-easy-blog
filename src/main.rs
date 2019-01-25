@@ -9,9 +9,13 @@ extern crate config;
 extern crate env_logger;
 
 use std::path::{Path, PathBuf};
+use std::io::BufReader;
 
 use config::{Config, File};
 use structopt::StructOpt;
+
+use post::file::File as PostFile;
+use post::render_post_body;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -47,6 +51,29 @@ fn init(args: Args, conf: Config) -> Result<(), String> {
 
 fn build(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling build with {:?}", args);
+    let text =
+"Title: How I Met Your Mother
+#Date: Please
+Author: Jake 'n Josh
+
+Hi there Bob
+It's me. Matt
+
+Click [this][] and look at ![this 2][]
+or ![this 3](https://example.com/img2.jpg)
+
+[this]: https://torproject.org
+[this 2]: https://example.com/img.png
+
+";
+    let br = BufReader::new(text.as_bytes());
+    let pf = PostFile::new_from_buf(Box::new(br));
+    if pf.is_err() {
+        return Err(pf.unwrap_err().to_string());
+    }
+    let pf = pf.unwrap();
+    let res = render_post_body(&pf, &conf.get_str("paths.parse_bin").unwrap());
+    println!("{}", res);
     Ok(())
 }
 

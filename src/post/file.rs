@@ -76,6 +76,10 @@ impl File {
     pub fn has_header(&self, key: &str) -> bool {
         self.get_header(key).is_some()
     }
+
+    pub fn get_body(&self) -> String {
+        self.body.clone()
+    }
 }
 impl ToString for File {
     fn to_string(&self) -> String {
