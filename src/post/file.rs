@@ -40,8 +40,14 @@ impl File {
         }
         f.text = all_lines.join("\n");
         f.body = body_lines.join("\n");
-        Ok(f)
+        let err = f.has_required_headers();
+        return if err.is_err() {
+            Err(PostParseError::MissingHeaders(err.unwrap_err()))
+        } else {
+            Ok(f)
+        };
     }
+
     pub fn get_header(&self, key: &str) -> Option<String> {
         let key = key.to_lowercase();
         for h in &self.headers {
@@ -50,6 +56,21 @@ impl File {
             }
         }
         None
+    }
+
+    pub fn has_required_headers(&self) -> Result<(), String> {
+        let mut missing = vec![];
+        let required_headers = ["title", "author"];
+        for h in required_headers.iter() {
+            if !self.has_header(h) {
+                missing.push(*h);
+            }
+        }
+        if missing.is_empty() {
+            return Ok(());
+        } else {
+            return Err(missing.join(", "));
+        }
     }
 
     pub fn has_header(&self, key: &str) -> bool {
