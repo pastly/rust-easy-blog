@@ -67,7 +67,7 @@ or ![this 3](https://example.com/img2.jpg)
 
 ";
     let br = BufReader::new(text.as_bytes());
-    let pf = PostFile::new_from_buf(Box::new(br));
+    let pf = PostFile::new_from_buf(Box::new(br), None);
     if pf.is_err() {
         return Err(pf.unwrap_err().to_string());
     }

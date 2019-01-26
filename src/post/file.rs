@@ -1,12 +1,14 @@
 use super::header::HeaderLine;
 use super::PostParseError;
 use std::io::BufRead;
+use std::time::SystemTime;
 
 #[derive(Debug)]
 pub struct File {
     headers: Vec<HeaderLine>,
     text: String, // All text in file
     body: String, // Only after header and seperator
+    last_modified: Option<u64>,
 }
 impl File {
     fn new() -> Self {
@@ -14,9 +16,11 @@ impl File {
             headers: vec![],
             text: String::new(),
             body: String::new(),
+            last_modified: None,
         }
     }
-    pub fn new_from_buf(buf: Box<BufRead>) -> Result<Self, PostParseError> {
+
+    pub fn new_from_buf(buf: Box<BufRead>, last_modified: Option<SystemTime>) -> Result<Self, PostParseError> {
         let mut f = Self::new();
         let mut all_lines = vec![];
         let mut body_lines = vec![];
@@ -40,12 +44,22 @@ impl File {
         }
         f.text = all_lines.join("\n");
         f.body = body_lines.join("\n");
+        if last_modified.is_some() {
+            f.set_last_modified(last_modified.unwrap());
+        }
         let err = f.has_required_headers();
         return if err.is_err() {
             Err(PostParseError::MissingHeaders(err.unwrap_err()))
         } else {
             Ok(f)
         };
+    }
+
+    fn set_last_modified(&mut self, last_modified: SystemTime) {
+        self.last_modified = Some(last_modified
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs());
     }
 
     pub fn get_header(&self, key: &str) -> Option<String> {
