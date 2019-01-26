@@ -8,12 +8,15 @@ extern crate log;
 extern crate config;
 extern crate env_logger;
 
+use std::fs::{File, metadata};
 use std::path::{Path, PathBuf};
 use std::io::BufReader;
 
-use config::{Config, File};
+use config::Config;
+use config::File as ConfigFile;
 use structopt::StructOpt;
 
+use util::fs::{recursive_find_files, paths_with_extension};
 use post::file::File as PostFile;
 use post::render_post_body;
 
@@ -44,6 +47,26 @@ enum CommandArgs {
     },
 }
 
+fn find_all_post_files(post_dname: &str) -> Vec<PostFile> {
+    let post_files = recursive_find_files(post_dname);
+    let post_files = paths_with_extension(&post_files, ".reb");
+    let post_files: Vec<PostFile> = {
+        let mut v = vec![];
+        for fname in post_files {
+            let buf = BufReader::new(File::open(&fname).unwrap());
+            let mod_time = metadata(&fname).unwrap().modified().unwrap();
+            let post = PostFile::new_from_buf(Box::new(buf), Some(mod_time));
+            if post.is_err() {
+                error!("{}", post.unwrap_err());
+            } else {
+                v.push(post.unwrap());
+            }
+        }
+        v
+    };
+    post_files
+}
+
 fn init(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling init with {:?}", args);
     Ok(())
@@ -51,35 +74,20 @@ fn init(args: Args, conf: Config) -> Result<(), String> {
 
 fn build(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling build with {:?}", args);
-    let text =
-"Title: How I Met Your Mother
-#Date: Please
-Author: Jake 'n Josh
-
-Hi there Bob
-It's me. Matt
-
-Click [this][] and look at ![this 2][]
-or ![this 3](https://example.com/img2.jpg)
-
-[this]: https://torproject.org
-[this 2]: https://example.com/img.png
-
-";
-    let br = BufReader::new(text.as_bytes());
-    let pf = PostFile::new_from_buf(Box::new(br), None);
-    if pf.is_err() {
-        return Err(pf.unwrap_err().to_string());
+    let post_files = find_all_post_files(&conf.get_str("paths.post_dname").unwrap());
+    debug!("Found {} valid post files", post_files.len());
+    if post_files.is_empty() {
+        return Ok(())
     }
-    let pf = pf.unwrap();
-    let res = render_post_body(&pf, &conf.get_str("paths.parse_bin").unwrap());
-    println!("{}", res);
+    for pf in &post_files {
+        debug!("{:?} {}", pf.get_last_modified(), pf.get_header("title").unwrap());
+    }
     Ok(())
 }
 
 fn get_config() -> Result<Config, String> {
     let mut conf = Config::new();
-    let ok = conf.merge(File::with_name("src/config.default.toml"));
+    let ok = conf.merge(ConfigFile::with_name("src/config.default.toml"));
     if ok.is_err() {
         return Err(ok.unwrap_err().to_string());
     }
@@ -134,24 +142,4 @@ fn main() -> Result<(), String> {
         CommandArgs::Init { force } => init(args, conf),
         CommandArgs::Build { rebuild } => build(args, conf),
     }
-
-    //let fnames = fs::recursive_find_files(&Path::new("./testdata"));
-    //let fnames = fs::paths_with_extension(&fnames, ".reb");
-    //for fname in fnames {
-    //    let buf = BufReader::new(std::fs::File::open(&fname).unwrap());
-    //    let post = PostFile::new_from_buf(Box::new(buf));
-    //    println!("{:?}", post);
-    //}
-
-    //let text = "Title: How I Met Your Mother\n#Date: Please\nAuthor: Jake 'n Josh\n\nHi\nthere bob\n\n\n    boyo";
-    //let br = BufReader::new(text.as_bytes());
-    //let pf = File::new_from_buf(Box::new(br));
-    //if pf.is_err() {
-    //    println!("ERROR: {}", pf.unwrap_err());
-    //    return;
-    //}
-    //let pf = pf.unwrap();
-    //assert!(pf.has_header("title"));
-    //println!("{}", pf.get_header("author").unwrap());
-    //println!("OK");
 }

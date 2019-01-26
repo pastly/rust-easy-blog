@@ -3,7 +3,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Find all files that are in *d* or in some subdir of *d*, performing a breadth first search
-pub fn recursive_find_files(d: &Path) -> Vec<PathBuf> {
+pub fn recursive_find_files(d: &str) -> Vec<PathBuf> {
+    let d = Path::new(d);
     let mut v: Vec<PathBuf> = Vec::new();
     let mut q: VecDeque<PathBuf> = VecDeque::new();
     q.push_back(PathBuf::from(d));

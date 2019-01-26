@@ -94,6 +94,10 @@ impl File {
     pub fn get_body(&self) -> String {
         self.body.clone()
     }
+
+    pub fn get_last_modified(&self) -> Option<u64> {
+        self.last_modified
+    }
 }
 impl ToString for File {
     fn to_string(&self) -> String {
