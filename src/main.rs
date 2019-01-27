@@ -85,6 +85,7 @@ fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -
     <meta charset='utf-8' />
 </head>
 <body>
+<div id='page_content'>
 <header>
     <h1>{}</h1>
     <h2>{}</h2>
@@ -97,6 +98,7 @@ fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -
     write!(
         v,
         "
+</div> <!-- page_content -->
 </body>
 </html>\n"
     );
@@ -155,6 +157,33 @@ fn render_post(parser: &str, pf: &PostFile) -> Vec<u8> {
     v
 }
 
+fn render_css() -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "
+body {{
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    margin: 0;
+    padding: 0;
+    background-color: #F3F3F3;
+}}
+header,
+footer,
+article {{
+    background-color: #FFF;
+    border: 1px solid #CCC;
+}}
+article {{
+    padding: 20px 40px 20px 40px;
+}}
+#page_content {{
+    padding: 5px;
+    background-color: #DDD;
+    max-width: 900px;
+    margin: 24px auto;
+}}\n");
+    v
+}
+
 fn build(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling build with {:?}", args);
     let post_files = find_all_post_files(&conf.get_str("paths.post_dname").unwrap());
@@ -174,7 +203,7 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
     let blog_title = conf.get_str("strings.blog_title").unwrap();
     let blog_subtitle = conf.get_str("strings.blog_subtitle").unwrap();
     {
-        let fname = build_dname + "/index.html";
+        let fname = build_dname.clone() + "/index.html";
         let mut fd = OpenOptions::new()
             .create(true)
             .write(true)
@@ -202,6 +231,16 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
         let mut fd = Cursor::new(vec![]);
         fd.write_all(&render_post(&parser, &post_files[0]));
         println!("{}", String::from_utf8(fd.into_inner()).unwrap());
+    }
+    {
+        let fname = build_dname.clone() + "/static/style.css";
+        let mut fd = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(fname)
+            .unwrap();
+        fd.write_all(&render_css());
     }
     Ok(())
 }
@@ -259,6 +298,7 @@ fn ensure_dirs(conf: &Config) -> Result<(), String> {
     let dnames = vec![
         conf.get_str("paths.post_dname").unwrap(),
         conf.get_str("paths.build_dname").unwrap(),
+        conf.get_str("paths.build_dname").unwrap() + "/static",
     ];
     for d in &dnames {
         let meta = metadata(d);
