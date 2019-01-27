@@ -208,7 +208,7 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .unwrap();
         fd.write_all(&render_css());
     }
-    copy(&conf.get_str("paths.blog_img_fname").unwrap(), build_dname + "/static/img/header.jpg");
+    copy(&conf.get_str("paths.blog_img_fname").unwrap(), build_dname.clone() + "/static/img/header.jpg").unwrap();
     Ok(())
 }
 
