@@ -302,6 +302,11 @@ fn main() -> Result<(), String> {
     let mut conf = get_config()?;
     normalize_config(&mut conf)?;
     ensure_dirs(&conf)?;
+
+    use chrono::DateTime;
+    let dt = DateTime::parse_from_rfc2822("1 Apr 2003");
+    debug!("{:?}", dt);
+
     match args.cmd {
         CommandArgs::Init { force } => init(args, conf),
         CommandArgs::Build { rebuild } => build(args, conf),
