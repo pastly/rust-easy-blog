@@ -1,5 +1,6 @@
 mod post;
 mod util;
+mod template;
 
 //#[macro_use]
 extern crate structopt;
@@ -19,6 +20,7 @@ use structopt::StructOpt;
 
 use post::file::File as PostFile;
 use util::fs::{paths_with_extension, recursive_find_files};
+use template::{begin_html, css, end_html, page_footer, page_header, post_header, post_footer};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -74,52 +76,22 @@ fn init(args: Args, conf: Config) -> Result<(), String> {
 
 fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -> Vec<u8> {
     let mut v = vec![];
-    write!(
-        v,
-        "
-<html>
-<head>
-    <title>Blog Title</title>
-    <link href='/static/style.css' rel='stylesheet' type='text/css' />
-    <link rel='icon' type=image/png' href='/static/img/favicon.png' />
-    <meta charset='utf-8' />
-</head>
-<body>
-<div id='page_content'>
-<header>
-    <h1>{}</h1>
-    <h2>{}</h2>
-</header>\n",
-        title, subtitle
-    );
+    write!(v, "{}", begin_html(title));
+    write!(v, "{}", page_header(&title, &subtitle));
     for pf in posts {
-        v.extend(render_post(&parser, &pf));
+        v.extend(render_post_preview(&parser, &pf));
     }
-    write!(
-        v,
-        "
-</div> <!-- page_content -->
-</body>
-</html>\n"
-    );
+    write!(v, "{}", page_footer());
+    write!(v, "{}", end_html());
     v
 }
 
 fn render_post_header(pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
-    write!(
-        v,
-        "
-<div class='post_header'>
-    <h1 class='post_title'>{}</h1>
-    <p class='post_author'>{}</p>
-    <p class='post_date'></p>
-    <p class='post_mod_date'></p>
-    <p class='post_permalink'></p>
-</div> <!-- post_header -->\n",
-        pf.get_header("title").unwrap(),
-        pf.get_header("author").unwrap()
-    );
+    write!(v,
+           "{}", post_header(
+               pf.get_header("title").unwrap(),
+               pf.get_header("author").unwrap()));
     v
 }
 
@@ -148,39 +120,35 @@ fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
     v
 }
 
-fn render_post(parser: &str, pf: &PostFile) -> Vec<u8> {
+fn render_post_footer() -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "{}", post_footer());
+    v
+}
+
+fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFile) -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "{}", begin_html(&blog_title));
+    write!(v, "{}", page_header(&blog_title, &blog_subtitle));
+    v.extend(&render_post_preview(&parser, &pf));
+    write!(v, "{}", page_footer());
+    write!(v, "{}", end_html());
+    v
+}
+
+fn render_post_preview(parser: &str, pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
     write!(v, "<article>\n");
     v.extend(&render_post_header(&pf));
     v.extend(&render_post_body(parser, &pf));
+    v.extend(&render_post_footer());
     write!(v, "</article>\n");
     v
 }
 
 fn render_css() -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "
-body {{
-    font-family: Georgia, 'Times New Roman', Times, serif;
-    margin: 0;
-    padding: 0;
-    background-color: #F3F3F3;
-}}
-header,
-footer,
-article {{
-    background-color: #FFF;
-    border: 1px solid #CCC;
-}}
-article {{
-    padding: 20px 40px 20px 40px;
-}}
-#page_content {{
-    padding: 5px;
-    background-color: #DDD;
-    max-width: 900px;
-    margin: 24px auto;
-}}\n");
+    write!(v, "{}", css());
     v
 }
 
@@ -192,11 +160,6 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
         return Ok(());
     }
     for pf in &post_files {
-        debug!(
-            "{:?} {}",
-            pf.get_last_modified(),
-            pf.get_header("title").unwrap()
-        );
     }
     let build_dname = conf.get_str("paths.build_dname").unwrap();
     let parser = conf.get_str("paths.parse_bin").unwrap();
@@ -217,23 +180,21 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             &post_files,
         ));
     }
-    {
-        let mut fd = Cursor::new(vec![]);
-        fd.write_all(&render_index(
-            &parser,
-            &blog_title,
-            &blog_subtitle,
-            &post_files,
-        ));
-        println!("{}", String::from_utf8(fd.into_inner()).unwrap());
-    }
-    {
-        let mut fd = Cursor::new(vec![]);
-        fd.write_all(&render_post(&parser, &post_files[0]));
-        println!("{}", String::from_utf8(fd.into_inner()).unwrap());
+    for post_file in &post_files {
+        let dname = build_dname.clone() + "/posts";
+        let fname = dname + "/" + &post_file.get_long_rendered_filename();
+        debug!("Rendering {} ...", fname);
+        let mut fd = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(fname)
+            .unwrap();
+        fd.write_all(&render_post(&parser, &blog_title, &blog_subtitle, &post_file));
     }
     {
         let fname = build_dname.clone() + "/static/style.css";
+        debug!("Rendering {} ...", fname);
         let mut fd = OpenOptions::new()
             .create(true)
             .write(true)
@@ -298,6 +259,8 @@ fn ensure_dirs(conf: &Config) -> Result<(), String> {
     let dnames = vec![
         conf.get_str("paths.post_dname").unwrap(),
         conf.get_str("paths.build_dname").unwrap(),
+        conf.get_str("paths.build_dname").unwrap() + "/posts",
+        conf.get_str("paths.build_dname").unwrap() + "/p",
         conf.get_str("paths.build_dname").unwrap() + "/static",
     ];
     for d in &dnames {

@@ -103,6 +103,19 @@ impl File {
     pub fn get_last_modified(&self) -> Option<u64> {
         self.last_modified
     }
+
+    pub fn get_long_rendered_filename(&self) -> String {
+        let mut s = self.get_header("title")
+            .unwrap()
+            .to_lowercase()
+            .split(" ")
+            .collect::<Vec<&str>>()[0..3]
+            .join("-");
+        s += "-";
+        s += &self.get_header("id").unwrap();
+        s += ".html";
+        s
+    }
 }
 impl ToString for File {
     fn to_string(&self) -> String {
