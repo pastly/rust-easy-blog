@@ -80,11 +80,7 @@ impl File {
                 missing.push(*h);
             }
         }
-        if missing.is_empty() {
-            return Ok(());
-        } else {
-            return Err(missing.join(", "));
-        }
+        if missing.is_empty() { Ok(()) } else { Err(missing.join(", ")) }
     }
 
     pub fn has_header(&self, key: &str) -> bool {
