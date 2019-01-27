@@ -20,7 +20,10 @@ impl File {
         }
     }
 
-    pub fn new_from_buf(buf: Box<BufRead>, last_modified: Option<SystemTime>) -> Result<Self, PostParseError> {
+    pub fn new_from_buf(
+        buf: Box<BufRead>,
+        last_modified: Option<SystemTime>,
+    ) -> Result<Self, PostParseError> {
         let mut f = Self::new();
         let mut all_lines = vec![];
         let mut body_lines = vec![];
@@ -56,10 +59,12 @@ impl File {
     }
 
     fn set_last_modified(&mut self, last_modified: SystemTime) {
-        self.last_modified = Some(last_modified
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs());
+        self.last_modified = Some(
+            last_modified
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        );
     }
 
     pub fn get_header(&self, key: &str) -> Option<String> {
@@ -80,7 +85,11 @@ impl File {
                 missing.push(*h);
             }
         }
-        if missing.is_empty() { Ok(()) } else { Err(missing.join(", ")) }
+        if missing.is_empty() {
+            Ok(())
+        } else {
+            Err(missing.join(", "))
+        }
     }
 
     pub fn has_header(&self, key: &str) -> bool {

@@ -8,17 +8,17 @@ extern crate log;
 extern crate config;
 extern crate env_logger;
 
-use std::fs::{OpenOptions, File, metadata, create_dir_all};
+use std::fs::{create_dir_all, metadata, File, OpenOptions};
+use std::io::{BufReader, BufWriter, Cursor, Write};
 use std::path::{Path, PathBuf};
-use std::io::{Cursor, Write, BufReader, BufWriter};
 use std::process::{Command, Stdio};
 
 use config::Config;
 use config::File as ConfigFile;
 use structopt::StructOpt;
 
-use util::fs::{recursive_find_files, paths_with_extension};
 use post::file::File as PostFile;
+use util::fs::{paths_with_extension, recursive_find_files};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -74,7 +74,9 @@ fn init(args: Args, conf: Config) -> Result<(), String> {
 
 fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "
+    write!(
+        v,
+        "
 <html>
 <head>
     <title>Blog Title</title>
@@ -87,20 +89,25 @@ fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -
     <h1>{}</h1>
     <h2>{}</h2>
 </header>\n",
-    title,
-    subtitle);
+        title, subtitle
+    );
     for pf in posts {
         v.extend(render_post(&parser, &pf));
     }
-    write!(v, "
+    write!(
+        v,
+        "
 </body>
-</html>\n");
+</html>\n"
+    );
     v
 }
 
 fn render_post_header(pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "
+    write!(
+        v,
+        "
 <div class='post_header'>
     <h1 class='post_title'>{}</h1>
     <p class='post_author'>{}</p>
@@ -108,8 +115,8 @@ fn render_post_header(pf: &PostFile) -> Vec<u8> {
     <p class='post_mod_date'></p>
     <p class='post_permalink'></p>
 </div> <!-- post_header -->\n",
-    pf.get_header("title").unwrap(),
-    pf.get_header("author").unwrap()
+        pf.get_header("title").unwrap(),
+        pf.get_header("author").unwrap()
     );
     v
 }
@@ -122,10 +129,17 @@ fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
         .spawn()
         .expect("Failed to execute parser command");
     {
-        let mut stdin = proc.stdin.as_mut().expect("Failed to open stdin on parser command");
-        stdin.write_all(pf.get_body().as_bytes()).expect("Failed to write post body to parser stdin");
+        let mut stdin = proc
+            .stdin
+            .as_mut()
+            .expect("Failed to open stdin on parser command");
+        stdin
+            .write_all(pf.get_body().as_bytes())
+            .expect("Failed to write post body to parser stdin");
     }
-    let output = proc.wait_with_output().expect("Failed to get post output from parser stdout");
+    let output = proc
+        .wait_with_output()
+        .expect("Failed to get post output from parser stdout");
     write!(v, "<div class='post_body'>\n");
     v.extend(output.stdout);
     write!(v, "</div> <!-- post_body -->\n");
@@ -146,10 +160,14 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
     let post_files = find_all_post_files(&conf.get_str("paths.post_dname").unwrap());
     debug!("Found {} valid post files", post_files.len());
     if post_files.is_empty() {
-        return Ok(())
+        return Ok(());
     }
     for pf in &post_files {
-        debug!("{:?} {}", pf.get_last_modified(), pf.get_header("title").unwrap());
+        debug!(
+            "{:?} {}",
+            pf.get_last_modified(),
+            pf.get_header("title").unwrap()
+        );
     }
     let build_dname = conf.get_str("paths.build_dname").unwrap();
     let parser = conf.get_str("paths.parse_bin").unwrap();
@@ -163,11 +181,21 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .truncate(true)
             .open(fname)
             .unwrap();
-        fd.write_all(&render_index(&parser, &blog_title, &blog_subtitle, &post_files));
+        fd.write_all(&render_index(
+            &parser,
+            &blog_title,
+            &blog_subtitle,
+            &post_files,
+        ));
     }
     {
         let mut fd = Cursor::new(vec![]);
-        fd.write_all(&render_index(&parser, &blog_title, &blog_subtitle, &post_files));
+        fd.write_all(&render_index(
+            &parser,
+            &blog_title,
+            &blog_subtitle,
+            &post_files,
+        ));
         println!("{}", String::from_utf8(fd.into_inner()).unwrap());
     }
     {
@@ -249,7 +277,11 @@ fn ensure_dirs(conf: &Config) -> Result<(), String> {
             err.push(format!("{} must be a directory, but is a file", d));
         }
     }
-    if err.is_empty() { Ok(()) } else { Err(err.join(", ")) }
+    if err.is_empty() {
+        Ok(())
+    } else {
+        Err(err.join(", "))
+    }
 }
 
 fn main() -> Result<(), String> {
