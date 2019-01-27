@@ -166,8 +166,6 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
     if post_files.is_empty() {
         return Ok(());
     }
-    for pf in &post_files {
-    }
     let build_dname = conf.get_str("paths.build_dname").unwrap();
     let parser = conf.get_str("paths.parse_bin").unwrap();
     let blog_title = conf.get_str("strings.blog_title").unwrap();
