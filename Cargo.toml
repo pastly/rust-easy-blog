@@ -1,11 +1,10 @@
 [package]
-name = "blog"
+name = "reb"
 version = "0.1.0"
 authors = ["Matt Traudt <sirmatt@ksu.edu>"]
 edition = "2018"
 
 [dependencies]
-tini = "0.2.0"
 structopt = "0.2"
 log = "0.4"
 env_logger = "0.6"
