@@ -8,9 +8,10 @@ extern crate log;
 extern crate config;
 extern crate env_logger;
 
-use std::fs::{File, metadata};
+use std::fs::{OpenOptions, File, metadata, create_dir_all};
 use std::path::{Path, PathBuf};
-use std::io::BufReader;
+use std::io::{Cursor, Write, BufReader, BufWriter};
+use std::process::{Command, Stdio};
 
 use config::Config;
 use config::File as ConfigFile;
@@ -18,7 +19,6 @@ use structopt::StructOpt;
 
 use util::fs::{recursive_find_files, paths_with_extension};
 use post::file::File as PostFile;
-use post::render_post_body;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -72,6 +72,75 @@ fn init(args: Args, conf: Config) -> Result<(), String> {
     Ok(())
 }
 
+fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "
+<html>
+<head>
+    <title>Blog Title</title>
+    <link href='/static/style.css' rel='stylesheet' type='text/css' />
+    <link rel='icon' type=image/png' href='/static/img/favicon.png' />
+    <meta charset='utf-8' />
+</head>
+<body>
+<header>
+    <h1>{}</h1>
+    <h2>{}</h2>
+</header>\n",
+    title,
+    subtitle);
+    for pf in posts {
+        v.extend(render_post(&parser, &pf));
+    }
+    write!(v, "
+</body>
+</html>\n");
+    v
+}
+
+fn render_post_header(pf: &PostFile) -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "
+<div class='post_header'>
+    <h1 class='post_title'>{}</h1>
+    <p class='post_author'>{}</p>
+    <p class='post_date'></p>
+    <p class='post_mod_date'></p>
+    <p class='post_permalink'></p>
+</div> <!-- post_header -->\n",
+    pf.get_header("title").unwrap(),
+    pf.get_header("author").unwrap()
+    );
+    v
+}
+
+fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
+    let mut v = vec![];
+    let mut proc = Command::new(parser)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to execute parser command");
+    {
+        let mut stdin = proc.stdin.as_mut().expect("Failed to open stdin on parser command");
+        stdin.write_all(pf.get_body().as_bytes()).expect("Failed to write post body to parser stdin");
+    }
+    let output = proc.wait_with_output().expect("Failed to get post output from parser stdout");
+    write!(v, "<div class='post_body'>\n");
+    v.extend(output.stdout);
+    write!(v, "</div> <!-- post_body -->\n");
+    v
+}
+
+fn render_post(parser: &str, pf: &PostFile) -> Vec<u8> {
+    let mut v = vec![];
+    write!(v, "<article>\n");
+    v.extend(&render_post_header(&pf));
+    v.extend(&render_post_body(parser, &pf));
+    write!(v, "</article>\n");
+    v
+}
+
 fn build(args: Args, conf: Config) -> Result<(), String> {
     trace!("Calling build with {:?}", args);
     let post_files = find_all_post_files(&conf.get_str("paths.post_dname").unwrap());
@@ -81,6 +150,30 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
     }
     for pf in &post_files {
         debug!("{:?} {}", pf.get_last_modified(), pf.get_header("title").unwrap());
+    }
+    let build_dname = conf.get_str("paths.build_dname").unwrap();
+    let parser = conf.get_str("paths.parse_bin").unwrap();
+    let blog_title = conf.get_str("strings.blog_title").unwrap();
+    let blog_subtitle = conf.get_str("strings.blog_subtitle").unwrap();
+    {
+        let fname = build_dname + "/index.html";
+        let mut fd = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(fname)
+            .unwrap();
+        fd.write_all(&render_index(&parser, &blog_title, &blog_subtitle, &post_files));
+    }
+    {
+        let mut fd = Cursor::new(vec![]);
+        fd.write_all(&render_index(&parser, &blog_title, &blog_subtitle, &post_files));
+        println!("{}", String::from_utf8(fd.into_inner()).unwrap());
+    }
+    {
+        let mut fd = Cursor::new(vec![]);
+        fd.write_all(&render_post(&parser, &post_files[0]));
+        println!("{}", String::from_utf8(fd.into_inner()).unwrap());
     }
     Ok(())
 }
@@ -133,11 +226,38 @@ fn normalize_config(conf: &mut Config) -> Result<(), String> {
     Ok(())
 }
 
+fn ensure_dirs(conf: &Config) -> Result<(), String> {
+    let mut err = vec![];
+    let dnames = vec![
+        conf.get_str("paths.post_dname").unwrap(),
+        conf.get_str("paths.build_dname").unwrap(),
+    ];
+    for d in &dnames {
+        let meta = metadata(d);
+        if meta.is_err() {
+            let meta = meta.unwrap_err();
+            if meta.kind() == std::io::ErrorKind::NotFound {
+                debug!("Making directory {}", d);
+                create_dir_all(d);
+            } else {
+                err.push(meta.to_string());
+            }
+            continue;
+        }
+        let meta = meta.unwrap();
+        if meta.is_file() {
+            err.push(format!("{} must be a directory, but is a file", d));
+        }
+    }
+    if err.is_empty() { Ok(()) } else { Err(err.join(", ")) }
+}
+
 fn main() -> Result<(), String> {
     env_logger::init();
     let args = Args::from_args();
     let mut conf = get_config()?;
     normalize_config(&mut conf)?;
+    ensure_dirs(&conf)?;
     match args.cmd {
         CommandArgs::Init { force } => init(args, conf),
         CommandArgs::Build { rebuild } => build(args, conf),
