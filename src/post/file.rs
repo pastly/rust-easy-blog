@@ -79,7 +79,7 @@ impl File {
 
     pub fn has_required_headers(&self) -> Result<(), String> {
         let mut missing = vec![];
-        let required_headers = ["title", "author"];
+        let required_headers = ["title", "author", "id"];
         for h in required_headers.iter() {
             if !self.has_header(h) {
                 missing.push(*h);
