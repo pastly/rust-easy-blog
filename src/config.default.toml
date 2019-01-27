@@ -10,3 +10,4 @@ build_dname = "build"
 parse_bin = "cmark"
 # Will be copied to /static/img/header.jpg
 blog_img_fname = "cats.jpg"
+favicon_fname = "favicon.png"

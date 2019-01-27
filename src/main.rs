@@ -209,6 +209,7 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
         fd.write_all(&render_css());
     }
     copy(&conf.get_str("paths.blog_img_fname").unwrap(), build_dname.clone() + "/static/img/header.jpg").unwrap();
+    copy(&conf.get_str("paths.favicon_fname").unwrap(), build_dname.clone() + "/static/img/favicon.png").unwrap();
     Ok(())
 }
 
