@@ -24,8 +24,9 @@ pub fn end_html() -> String {
 pub fn page_header(title: &str, subtitle: &str) -> String {
     format!("
 <header>
-    <h1>{title}</h1>
-    <h2>{subtitle}</h2>
+    <h1 id='blog_title'>{title}</h1>
+    <h2 id='blog_subtitle'>{subtitle}</h2>
+    <img id='blog_img' />
 </header>\n", title=title, subtitle=subtitle)
 }
 
@@ -35,13 +36,20 @@ pub fn page_footer() -> String {
 </footer>\n")
 }
 
-pub fn post_header(title: String, author: String) -> String {
+pub fn post_header(title: String, author: String, link: Option<String>) -> String {
     let mut s = String::new();
-    s += &format!("
-<div class='post_header'>
-<h1 class='post_title'>{title}</h1>
-<p class='post_author'>{author}</p>\n",
-        title=title,
+    s += "<div class='post_header'>\n";
+    s += &if link.is_some() {
+        format!(
+            "<h1 class='post_title'><a href='{link}'>{title}</a></h1>\n",
+            link=link.unwrap(), title=title)
+    } else {
+        format!(
+            "<h1 class='post_title'>{title}</h1>\n",
+            title=title)
+    };
+    s += &format!(
+        "<p class='post_author'>{author}</p>\n",
         author=author);
     // post date
     // post mod date
@@ -68,6 +76,17 @@ article {{
     background-color: #FFF;
     border: 1px solid #CCC;
 }}
+header {{
+    display: grid;
+    grid-template-columns: auto 150px;
+    grid-template-rows: 1fr auto auto 6fr;
+    grid-template-areas:
+        '.        img'
+        'title    img'
+        'subtitle img'
+        '.        img';
+    justify-items: center;
+}}
 article {{
     padding: 20px 40px 20px 40px;
 }}
@@ -76,5 +95,25 @@ article {{
     background-color: #DDD;
     max-width: 900px;
     margin: 24px auto;
-}}")
+}}
+a {{
+    text-decoration: none;
+    color: #336699;
+}}
+a:hover {{
+    color: #5588bb;
+}}
+#blog_title {{
+    grid-area: title;
+}}
+#blog_subtitle {{
+    grid-area: subtitle;
+    font-size: medium;
+    font-weight: normal;
+}}
+#blog_img {{
+    grid-area: img;
+    align-self: center;
+}}
+")
 }

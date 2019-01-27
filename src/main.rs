@@ -79,19 +79,26 @@ fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -
     write!(v, "{}", begin_html(title));
     write!(v, "{}", page_header(&title, &subtitle));
     for pf in posts {
-        v.extend(render_post_preview(&parser, &pf));
+        v.extend(render_post_preview(&parser, &pf, true));
     }
     write!(v, "{}", page_footer());
     write!(v, "{}", end_html());
     v
 }
 
-fn render_post_header(pf: &PostFile) -> Vec<u8> {
+fn render_post_header(pf: &PostFile, with_link: bool) -> Vec<u8> {
     let mut v = vec![];
-    write!(v,
-           "{}", post_header(
+    write!(v, "{}",
+           post_header(
                pf.get_header("title").unwrap(),
-               pf.get_header("author").unwrap()));
+               pf.get_header("author").unwrap(),
+               if with_link {
+                   Some("/posts/".to_string() + &pf.get_long_rendered_filename())
+               } else {
+                   None
+               },
+           )
+    );
     v
 }
 
@@ -130,16 +137,16 @@ fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFil
     let mut v = vec![];
     write!(v, "{}", begin_html(&blog_title));
     write!(v, "{}", page_header(&blog_title, &blog_subtitle));
-    v.extend(&render_post_preview(&parser, &pf));
+    v.extend(&render_post_preview(&parser, &pf, false));
     write!(v, "{}", page_footer());
     write!(v, "{}", end_html());
     v
 }
 
-fn render_post_preview(parser: &str, pf: &PostFile) -> Vec<u8> {
+fn render_post_preview(parser: &str, pf: &PostFile, with_links: bool) -> Vec<u8> {
     let mut v = vec![];
     write!(v, "<article>\n");
-    v.extend(&render_post_header(&pf));
+    v.extend(&render_post_header(&pf, with_links));
     v.extend(&render_post_body(parser, &pf));
     v.extend(&render_post_footer());
     write!(v, "</article>\n");
