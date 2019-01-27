@@ -9,7 +9,7 @@ extern crate log;
 extern crate config;
 extern crate env_logger;
 
-use std::fs::{create_dir_all, metadata, File, OpenOptions};
+use std::fs::{create_dir_all, copy, metadata, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Cursor, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -208,6 +208,7 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .unwrap();
         fd.write_all(&render_css());
     }
+    copy(&conf.get_str("paths.blog_img_fname").unwrap(), build_dname + "/static/img/header.jpg");
     Ok(())
 }
 
@@ -267,6 +268,7 @@ fn ensure_dirs(conf: &Config) -> Result<(), String> {
         conf.get_str("paths.build_dname").unwrap() + "/posts",
         conf.get_str("paths.build_dname").unwrap() + "/p",
         conf.get_str("paths.build_dname").unwrap() + "/static",
+        conf.get_str("paths.build_dname").unwrap() + "/static/img",
     ];
     for d in &dnames {
         let meta = metadata(d);

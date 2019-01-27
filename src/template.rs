@@ -26,7 +26,7 @@ pub fn page_header(title: &str, subtitle: &str) -> String {
 <header>
     <h1 id='blog_title'>{title}</h1>
     <h2 id='blog_subtitle'>{subtitle}</h2>
-    <img id='blog_img' />
+    <img id='blog_img' src='/static/img/header.jpg' />
 </header>\n", title=title, subtitle=subtitle)
 }
 
@@ -114,6 +114,9 @@ a:hover {{
 #blog_img {{
     grid-area: img;
     align-self: center;
+}}
+img {{
+    max-width: 100%;
 }}
 ")
 }
