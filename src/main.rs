@@ -135,7 +135,8 @@ fn render_post_footer() -> Vec<u8> {
 
 fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "{}", begin_html(&blog_title));
+    let title = pf.get_header("title").unwrap() + " | " + &blog_title;
+    write!(v, "{}", begin_html(&title));
     write!(v, "{}", page_header(&blog_title, &blog_subtitle));
     v.extend(&render_post_preview(&parser, &pf, false));
     write!(v, "{}", page_footer());
