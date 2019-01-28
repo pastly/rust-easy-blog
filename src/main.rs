@@ -1,16 +1,16 @@
 mod post;
-mod util;
 mod template;
+mod util;
 
 //#[macro_use]
 extern crate structopt;
 #[macro_use]
 extern crate log;
+extern crate chrono;
 extern crate config;
 extern crate env_logger;
-extern crate chrono;
 
-use std::fs::{create_dir_all, copy, metadata, File, OpenOptions};
+use std::fs::{copy, create_dir_all, metadata, File, OpenOptions};
 use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -20,8 +20,8 @@ use config::File as ConfigFile;
 use structopt::StructOpt;
 
 use post::file::File as PostFile;
+use template::{begin_html, css, end_html, page_footer, page_header, post_footer, post_header};
 use util::fs::{paths_with_extension, recursive_find_files};
-use template::{begin_html, css, end_html, page_footer, page_header, post_header, post_footer};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -89,16 +89,18 @@ fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -
 
 fn render_post_header(pf: &PostFile, with_link: bool) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "{}",
-           post_header(
-               pf.get_header("title").unwrap(),
-               pf.get_header("author").unwrap(),
-               if with_link {
-                   Some("/posts/".to_string() + &pf.get_long_rendered_filename())
-               } else {
-                   None
-               },
-           )
+    write!(
+        v,
+        "{}",
+        post_header(
+            pf.get_header("title").unwrap(),
+            pf.get_header("author").unwrap(),
+            if with_link {
+                Some("/posts/".to_string() + &pf.get_long_rendered_filename())
+            } else {
+                None
+            },
+        )
     );
     v
 }
@@ -197,7 +199,12 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .truncate(true)
             .open(fname)
             .unwrap();
-        fd.write_all(&render_post(&parser, &blog_title, &blog_subtitle, &post_file));
+        fd.write_all(&render_post(
+            &parser,
+            &blog_title,
+            &blog_subtitle,
+            &post_file,
+        ));
     }
     {
         let fname = build_dname.clone() + "/static/style.css";
@@ -210,8 +217,16 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .unwrap();
         fd.write_all(&render_css());
     }
-    copy(&conf.get_str("paths.blog_img_fname").unwrap(), build_dname.clone() + "/static/img/header.jpg").unwrap();
-    copy(&conf.get_str("paths.favicon_fname").unwrap(), build_dname.clone() + "/static/img/favicon.png").unwrap();
+    copy(
+        &conf.get_str("paths.blog_img_fname").unwrap(),
+        build_dname.clone() + "/static/img/header.jpg",
+    )
+    .unwrap();
+    copy(
+        &conf.get_str("paths.favicon_fname").unwrap(),
+        build_dname.clone() + "/static/img/favicon.png",
+    )
+    .unwrap();
     Ok(())
 }
 

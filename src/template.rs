@@ -1,5 +1,6 @@
 pub fn begin_html(title: &str) -> String {
-    format!("
+    format!(
+        "
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,29 +10,39 @@ pub fn begin_html(title: &str) -> String {
     <meta charset='utf-8' />
 </head>
 <body>
-<div id='page_content'>\n", title=title)
+<div id='page_content'>\n",
+        title = title
+    )
 }
 
 pub fn end_html() -> String {
-        format!("
+    format!(
+        "
 </div> <!-- page_content -->
 </body>
-</html>\n")
+</html>\n"
+    )
 }
 
 pub fn page_header(title: &str, subtitle: &str) -> String {
-    format!("
+    format!(
+        "
 <header>
     <h1 id='blog_title'>{title}</h1>
     <h2 id='blog_subtitle'>{subtitle}</h2>
     <img id='blog_img' src='/static/img/header.jpg' />
-</header>\n", title=title, subtitle=subtitle)
+</header>\n",
+        title = title,
+        subtitle = subtitle
+    )
 }
 
 pub fn page_footer() -> String {
-    format!("
+    format!(
+        "
 <footer>
-</footer>\n")
+</footer>\n"
+    )
 }
 
 pub fn post_header(title: String, author: String, link: Option<String>) -> String {
@@ -40,15 +51,13 @@ pub fn post_header(title: String, author: String, link: Option<String>) -> Strin
     s += &if link.is_some() {
         format!(
             "<h1 class='post_title'><a href='{link}'>{title}</a></h1>\n",
-            link=link.unwrap(), title=title)
+            link = link.unwrap(),
+            title = title
+        )
     } else {
-        format!(
-            "<h1 class='post_title'>{title}</h1>\n",
-            title=title)
+        format!("<h1 class='post_title'>{title}</h1>\n", title = title)
     };
-    s += &format!(
-        "<p class='post_author'>{author}</p>\n",
-        author=author);
+    s += &format!("<p class='post_author'>{author}</p>\n", author = author);
     // post date
     // post mod date
     // post permalink
@@ -61,7 +70,8 @@ pub fn post_footer() -> String {
 }
 
 pub fn css() -> String {
-    format!("
+    format!(
+        "
 body {{
     font-family: Georgia, 'Times New Roman', Times, serif;
     margin: 0;
@@ -116,5 +126,6 @@ a:hover {{
 img {{
     max-width: 100%;
 }}
-")
+"
+    )
 }

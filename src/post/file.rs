@@ -115,7 +115,8 @@ impl File {
     }
 
     pub fn get_long_rendered_filename(&self) -> String {
-        let mut s = self.get_header("title")
+        let mut s = self
+            .get_header("title")
             .unwrap()
             .to_lowercase()
             .split(" ")
@@ -144,8 +145,13 @@ mod tests {
         let text = "\nHi there";
         let br = BufReader::new(text.as_bytes());
         let pf = File::new_from_buf(
-            Box::new(br), None,
-            Some(FileOpts{ strict_headers: false })).unwrap();
+            Box::new(br),
+            None,
+            Some(FileOpts {
+                strict_headers: false,
+            }),
+        )
+        .unwrap();
         assert_eq!(pf.headers.len(), 0);
         assert_eq!(pf.body, "Hi there");
         assert_eq!(pf.to_string(), text);
@@ -156,8 +162,13 @@ mod tests {
         let text = "Aaaa: bbbb\n\nHi There";
         let br = BufReader::new(text.as_bytes());
         let pf = File::new_from_buf(
-            Box::new(br), None,
-            Some(FileOpts{ strict_headers: false })).unwrap();
+            Box::new(br),
+            None,
+            Some(FileOpts {
+                strict_headers: false,
+            }),
+        )
+        .unwrap();
         assert_eq!(pf.headers.len(), 1);
         for key in vec!["aaaa", "AAAA", "Aaaa", "aAaA"] {
             assert!(pf.has_header(key));
@@ -170,8 +181,13 @@ mod tests {
         let text = "";
         let br = BufReader::new(text.as_bytes());
         let pf = File::new_from_buf(
-            Box::new(br), None,
-            Some(FileOpts{ strict_headers: false })).unwrap();
+            Box::new(br),
+            None,
+            Some(FileOpts {
+                strict_headers: false,
+            }),
+        )
+        .unwrap();
         assert_eq!(pf.headers.len(), 0);
         assert!(!pf.has_header("aaaa"));
         assert_eq!(pf.get_header("aaaa"), None);
