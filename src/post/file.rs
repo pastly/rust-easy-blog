@@ -42,8 +42,10 @@ impl File {
                 if line.starts_with('#') {
                     continue;
                 }
-                if line.is_empty() {
+                if line.is_empty() && !f.headers.is_empty() {
                     doing_headers = false;
+                    continue;
+                } else if line.is_empty() {
                     continue;
                 }
                 f.headers.push(HeaderLine::new(line)?);
@@ -136,13 +138,12 @@ impl ToString for File {
 
 #[cfg(test)]
 mod tests {
-    use super::File;
-    use super::FileOpts;
+    use super::{File, FileOpts};
     use std::io::BufReader;
 
     #[test]
-    fn no_headers() {
-        let text = "\nHi there";
+    fn first_line_blank() {
+        let text = "\naaaa: bbbb\n\nHi there";
         let br = BufReader::new(text.as_bytes());
         let pf = File::new_from_buf(
             Box::new(br),
@@ -152,9 +153,25 @@ mod tests {
             }),
         )
         .unwrap();
-        assert_eq!(pf.headers.len(), 0);
+        assert_eq!(pf.headers.len(), 1);
+        assert!(pf.has_header("aaaa"));
+        assert_eq!(pf.get_header("aaaa").unwrap(), "bbbb");
         assert_eq!(pf.body, "Hi there");
         assert_eq!(pf.to_string(), text);
+    }
+
+    #[test]
+    fn no_headers() {
+        let text = "\nHi there";
+        let br = BufReader::new(text.as_bytes());
+        let err = File::new_from_buf(
+            Box::new(br),
+            None,
+            Some(FileOpts {
+                strict_headers: false,
+            }),
+        );
+        assert!(err.is_err());
     }
 
     #[test]
