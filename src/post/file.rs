@@ -112,9 +112,9 @@ impl File {
         self.body.clone()
     }
 
-    pub fn get_last_modified(&self) -> Option<u64> {
-        self.last_modified
-    }
+    //pub fn get_last_modified(&self) -> Option<u64> {
+    //    self.last_modified
+    //}
 
     pub fn get_long_rendered_filename(&self) -> String {
         let mut s = self
