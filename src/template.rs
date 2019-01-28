@@ -1,5 +1,3 @@
-use super::post::file::File as PostFile;
-
 pub fn begin_html(title: &str) -> String {
     format!("
 <!DOCTYPE html>

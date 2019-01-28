@@ -11,7 +11,7 @@ extern crate env_logger;
 extern crate chrono;
 
 use std::fs::{create_dir_all, copy, metadata, File, OpenOptions};
-use std::io::{BufReader, BufWriter, Cursor, Write};
+use std::io::{BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -70,7 +70,7 @@ fn find_all_post_files(post_dname: &str) -> Vec<PostFile> {
     post_files
 }
 
-fn init(args: Args, conf: Config) -> Result<(), String> {
+fn init(args: Args, _conf: Config) -> Result<(), String> {
     trace!("Calling init with {:?}", args);
     Ok(())
 }
@@ -111,7 +111,7 @@ fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
         .spawn()
         .expect("Failed to execute parser command");
     {
-        let mut stdin = proc
+        let stdin = proc
             .stdin
             .as_mut()
             .expect("Failed to open stdin on parser command");
@@ -309,7 +309,7 @@ fn main() -> Result<(), String> {
     debug!("{:?}", d.to_rfc2822());
 
     match args.cmd {
-        CommandArgs::Init { force } => init(args, conf),
-        CommandArgs::Build { rebuild } => build(args, conf),
+        CommandArgs::Init { force: _ } => init(args, conf),
+        CommandArgs::Build { rebuild: _ } => build(args, conf),
     }
 }
