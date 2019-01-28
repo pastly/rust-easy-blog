@@ -77,13 +77,13 @@ fn init(args: Args, _conf: Config) -> Result<(), String> {
 
 fn render_index(parser: &str, title: &str, subtitle: &str, posts: &[PostFile]) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "{}", begin_html(title));
-    write!(v, "{}", page_header(&title, &subtitle));
+    write!(v, "{}", begin_html(title)).unwrap();
+    write!(v, "{}", page_header(&title, &subtitle)).unwrap();
     for pf in posts {
         v.extend(render_post_preview(&parser, &pf, true));
     }
-    write!(v, "{}", page_footer());
-    write!(v, "{}", end_html());
+    write!(v, "{}", page_footer()).unwrap();
+    write!(v, "{}", end_html()).unwrap();
     v
 }
 
@@ -101,7 +101,8 @@ fn render_post_header(pf: &PostFile, with_link: bool) -> Vec<u8> {
                 None
             },
         )
-    );
+    )
+    .unwrap();
     v
 }
 
@@ -124,42 +125,42 @@ fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
     let output = proc
         .wait_with_output()
         .expect("Failed to get post output from parser stdout");
-    write!(v, "<div class='post_body'>\n");
+    write!(v, "<div class='post_body'>\n").unwrap();
     v.extend(output.stdout);
-    write!(v, "</div> <!-- post_body -->\n");
+    write!(v, "</div> <!-- post_body -->\n").unwrap();
     v
 }
 
 fn render_post_footer() -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "{}", post_footer());
+    write!(v, "{}", post_footer()).unwrap();
     v
 }
 
 fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
     let title = pf.get_header("title").unwrap() + " | " + &blog_title;
-    write!(v, "{}", begin_html(&title));
-    write!(v, "{}", page_header(&blog_title, &blog_subtitle));
+    write!(v, "{}", begin_html(&title)).unwrap();
+    write!(v, "{}", page_header(&blog_title, &blog_subtitle)).unwrap();
     v.extend(&render_post_preview(&parser, &pf, false));
-    write!(v, "{}", page_footer());
-    write!(v, "{}", end_html());
+    write!(v, "{}", page_footer()).unwrap();
+    write!(v, "{}", end_html()).unwrap();
     v
 }
 
 fn render_post_preview(parser: &str, pf: &PostFile, with_links: bool) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "<article>\n");
+    write!(v, "<article>\n").unwrap();
     v.extend(&render_post_header(&pf, with_links));
     v.extend(&render_post_body(parser, &pf));
     v.extend(&render_post_footer());
-    write!(v, "</article>\n");
+    write!(v, "</article>\n").unwrap();
     v
 }
 
 fn render_css() -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "{}", css());
+    write!(v, "{}", css()).unwrap();
     v
 }
 
@@ -182,12 +183,17 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .truncate(true)
             .open(fname)
             .unwrap();
-        fd.write_all(&render_index(
+        match fd.write_all(&render_index(
             &parser,
             &blog_title,
             &blog_subtitle,
             &post_files,
-        ));
+        )) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
     }
     for post_file in &post_files {
         let dname = build_dname.clone() + "/posts";
@@ -199,12 +205,17 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .truncate(true)
             .open(fname)
             .unwrap();
-        fd.write_all(&render_post(
+        match fd.write_all(&render_post(
             &parser,
             &blog_title,
             &blog_subtitle,
             &post_file,
-        ));
+        )) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        };
     }
     {
         let fname = build_dname.clone() + "/static/style.css";
@@ -215,7 +226,12 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
             .truncate(true)
             .open(fname)
             .unwrap();
-        fd.write_all(&render_css());
+        match fd.write_all(&render_css()) {
+            Ok(_) => {}
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        };
     }
     copy(
         &conf.get_str("paths.blog_img_fname").unwrap(),
@@ -294,7 +310,12 @@ fn ensure_dirs(conf: &Config) -> Result<(), String> {
             let meta = meta.unwrap_err();
             if meta.kind() == std::io::ErrorKind::NotFound {
                 debug!("Making directory {}", d);
-                create_dir_all(d);
+                match create_dir_all(d) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        return Err(e.to_string());
+                    }
+                };
             } else {
                 err.push(meta.to_string());
             }
