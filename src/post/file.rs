@@ -3,6 +3,11 @@ use super::PostParseError;
 use std::io::BufRead;
 use std::time::SystemTime;
 
+pub struct FileOpts {
+    /// If true, then all required headers must be present and well-formed
+    pub strict_headers: bool,
+}
+
 #[derive(Debug)]
 pub struct File {
     headers: Vec<HeaderLine>,
@@ -23,6 +28,7 @@ impl File {
     pub fn new_from_buf(
         buf: Box<BufRead>,
         last_modified: Option<SystemTime>,
+        opts: Option<FileOpts>,
     ) -> Result<Self, PostParseError> {
         let mut f = Self::new();
         let mut all_lines = vec![];
@@ -50,7 +56,11 @@ impl File {
         if last_modified.is_some() {
             f.set_last_modified(last_modified.unwrap());
         }
-        let err = f.has_required_headers();
+        let err = if opts.is_some() && opts.unwrap().strict_headers {
+            f.has_required_headers()
+        } else {
+            Ok(())
+        };
         return if err.is_err() {
             Err(PostParseError::MissingHeaders(err.unwrap_err()))
         } else {
@@ -126,13 +136,16 @@ impl ToString for File {
 #[cfg(test)]
 mod tests {
     use super::File;
+    use super::FileOpts;
     use std::io::BufReader;
 
     #[test]
     fn no_headers() {
         let text = "\nHi there";
         let br = BufReader::new(text.as_bytes());
-        let pf = File::new_from_buf(Box::new(br)).unwrap();
+        let pf = File::new_from_buf(
+            Box::new(br), None,
+            Some(FileOpts{ strict_headers: false })).unwrap();
         assert_eq!(pf.headers.len(), 0);
         assert_eq!(pf.body, "Hi there");
         assert_eq!(pf.to_string(), text);
@@ -142,7 +155,9 @@ mod tests {
     fn valid_header() {
         let text = "Aaaa: bbbb\n\nHi There";
         let br = BufReader::new(text.as_bytes());
-        let pf = File::new_from_buf(Box::new(br)).unwrap();
+        let pf = File::new_from_buf(
+            Box::new(br), None,
+            Some(FileOpts{ strict_headers: false })).unwrap();
         assert_eq!(pf.headers.len(), 1);
         for key in vec!["aaaa", "AAAA", "Aaaa", "aAaA"] {
             assert!(pf.has_header(key));
@@ -154,7 +169,9 @@ mod tests {
     fn missing_header() {
         let text = "";
         let br = BufReader::new(text.as_bytes());
-        let pf = File::new_from_buf(Box::new(br)).unwrap();
+        let pf = File::new_from_buf(
+            Box::new(br), None,
+            Some(FileOpts{ strict_headers: false })).unwrap();
         assert_eq!(pf.headers.len(), 0);
         assert!(!pf.has_header("aaaa"));
         assert_eq!(pf.get_header("aaaa"), None);

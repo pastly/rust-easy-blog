@@ -58,7 +58,7 @@ fn find_all_post_files(post_dname: &str) -> Vec<PostFile> {
         for fname in post_files {
             let buf = BufReader::new(File::open(&fname).unwrap());
             let mod_time = metadata(&fname).unwrap().modified().unwrap();
-            let post = PostFile::new_from_buf(Box::new(buf), Some(mod_time));
+            let post = PostFile::new_from_buf(Box::new(buf), Some(mod_time), None);
             if post.is_err() {
                 error!("{}", post.unwrap_err());
             } else {
