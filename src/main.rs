@@ -8,6 +8,7 @@ extern crate structopt;
 extern crate log;
 extern crate config;
 extern crate env_logger;
+extern crate chrono;
 
 use std::fs::{create_dir_all, copy, metadata, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Cursor, Write};
@@ -303,9 +304,9 @@ fn main() -> Result<(), String> {
     normalize_config(&mut conf)?;
     ensure_dirs(&conf)?;
 
-    use chrono::DateTime;
-    let dt = DateTime::parse_from_rfc2822("1 Apr 2003");
-    debug!("{:?}", dt);
+    let d = chrono::Local::now();
+    debug!("{:?}", d);
+    debug!("{:?}", d.to_rfc2822());
 
     match args.cmd {
         CommandArgs::Init { force } => init(args, conf),
