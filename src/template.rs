@@ -16,12 +16,11 @@ pub fn begin_html(title: &str) -> String {
 }
 
 pub fn end_html() -> String {
-    format!(
-        "
+    "
 </div> <!-- page_content -->
 </body>
 </html>\n"
-    )
+        .to_string()
 }
 
 pub fn page_header(title: &str, subtitle: &str) -> String {
@@ -38,11 +37,10 @@ pub fn page_header(title: &str, subtitle: &str) -> String {
 }
 
 pub fn page_footer() -> String {
-    format!(
-        "
+    "
 <footer>
 </footer>\n"
-    )
+        .to_string()
 }
 
 pub fn post_header(title: String, author: String, link: Option<String>) -> String {
@@ -70,21 +68,20 @@ pub fn post_footer() -> String {
 }
 
 pub fn css() -> String {
-    format!(
-        "
-body {{
+    "
+body {
     font-family: Georgia, 'Times New Roman', Times, serif;
     margin: 0;
     padding: 0;
     background-color: #F3F3F3;
-}}
+}
 header,
 footer,
-article {{
+article {
     background-color: #FFF;
     border: 1px solid #CCC;
-}}
-header {{
+}
+header {
     display: grid;
     grid-template-columns: auto 150px;
     grid-template-rows: 1fr auto auto 6fr;
@@ -94,38 +91,38 @@ header {{
         'subtitle img'
         '.        img';
     justify-items: center;
-}}
-article {{
+}
+article {
     padding: 20px 40px 20px 40px;
-}}
-#page_content {{
+}
+#page_content {
     padding: 5px;
     background-color: #DDD;
     max-width: 900px;
     margin: 24px auto;
-}}
-a {{
+}
+a {
     text-decoration: none;
     color: #336699;
-}}
-a:hover {{
+}
+a:hover {
     color: #5588bb;
-}}
-#blog_title {{
+}
+#blog_title {
     grid-area: title;
-}}
-#blog_subtitle {{
+}
+#blog_subtitle {
     grid-area: subtitle;
     font-size: medium;
     font-weight: normal;
-}}
-#blog_img {{
+}
+#blog_img {
     grid-area: img;
     align-self: center;
-}}
-img {{
+}
+img {
     max-width: 100%;
-}}
+}
 "
-    )
+    .to_string()
 }

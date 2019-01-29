@@ -63,11 +63,11 @@ impl File {
         } else {
             Ok(())
         };
-        return if err.is_err() {
+        if err.is_err() {
             Err(PostParseError::MissingHeaders(err.unwrap_err()))
         } else {
             Ok(f)
-        };
+        }
     }
 
     fn set_last_modified(&mut self, last_modified: SystemTime) {
@@ -121,7 +121,7 @@ impl File {
             .get_header("title")
             .unwrap()
             .to_lowercase()
-            .split(" ")
+            .split(' ')
             .collect::<Vec<&str>>()[0..3]
             .join("-");
         s += "-";

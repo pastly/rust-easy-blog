@@ -125,9 +125,9 @@ fn render_post_body(parser: &str, pf: &PostFile) -> Vec<u8> {
     let output = proc
         .wait_with_output()
         .expect("Failed to get post output from parser stdout");
-    write!(v, "<div class='post_body'>\n").unwrap();
+    writeln!(v, "<div class='post_body'>").unwrap();
     v.extend(output.stdout);
-    write!(v, "</div> <!-- post_body -->\n").unwrap();
+    writeln!(v, "</div> <!-- post_body -->").unwrap();
     v
 }
 
@@ -139,7 +139,7 @@ fn render_post_footer() -> Vec<u8> {
 
 fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFile) -> Vec<u8> {
     let mut v = vec![];
-    let title = pf.get_header("title").unwrap() + " | " + &blog_title;
+    let title = pf.get_header("title").unwrap() + " | " + blog_title;
     write!(v, "{}", begin_html(&title)).unwrap();
     write!(v, "{}", page_header(&blog_title, &blog_subtitle)).unwrap();
     v.extend(&render_post_preview(&parser, &pf, false));
@@ -150,11 +150,11 @@ fn render_post(parser: &str, blog_title: &str, blog_subtitle: &str, pf: &PostFil
 
 fn render_post_preview(parser: &str, pf: &PostFile, with_links: bool) -> Vec<u8> {
     let mut v = vec![];
-    write!(v, "<article>\n").unwrap();
+    writeln!(v, "<article>").unwrap();
     v.extend(&render_post_header(&pf, with_links));
     v.extend(&render_post_body(parser, &pf));
     v.extend(&render_post_footer());
-    write!(v, "</article>\n").unwrap();
+    writeln!(v, "</article>").unwrap();
     v
 }
 
@@ -345,7 +345,7 @@ fn main() -> Result<(), String> {
     debug!("{:?}", d.to_rfc2822());
 
     match args.cmd {
-        CommandArgs::Init { force: _ } => init(args, conf),
-        CommandArgs::Build { rebuild: _ } => build(args, conf),
+        CommandArgs::Init { .. } => init(args, conf),
+        CommandArgs::Build { .. } => build(args, conf),
     }
 }
