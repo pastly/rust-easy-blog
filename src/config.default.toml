@@ -8,6 +8,9 @@ post_dname = "posts"
 build_dname = "build"
 # Can also be /path/to/parser
 parse_bin = "cmark"
+# Can also be /path/to/editor
+editor_bin = "cat"
 # Will be copied to /static/img/header.jpg
 blog_img_fname = "cats.jpg"
+# Will be copoied to /static/img/favicon.png
 favicon_fname = "favicon.png"

@@ -9,6 +9,8 @@ extern crate log;
 extern crate chrono;
 extern crate config;
 extern crate env_logger;
+extern crate rand;
+extern crate tempfile;
 
 use std::fs::{copy, create_dir_all, metadata, File, OpenOptions};
 use std::io::{BufReader, Write};
@@ -18,10 +20,12 @@ use std::process::{Command, Stdio};
 use config::Config;
 use config::File as ConfigFile;
 use structopt::StructOpt;
+use tempfile::NamedTempFile;
 
 use post::file::File as PostFile;
 use template::{begin_html, css, end_html, page_footer, page_header, post_footer, post_header};
 use util::fs::{paths_with_extension, recursive_find_files};
+use util::gen_id;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "reb")]
@@ -47,6 +51,12 @@ enum CommandArgs {
         #[structopt(short = "r", long = "rebuild")]
         /// Force a rebuild of all output files
         rebuild: bool,
+    },
+    #[structopt(name = "create")]
+    /// Compose a new blog post
+    Create {
+        /// The title of the post
+        title: Vec<String>,
     },
 }
 
@@ -246,6 +256,45 @@ fn build(args: Args, conf: Config) -> Result<(), String> {
     Ok(())
 }
 
+fn create(args: Args, conf: Config) -> Result<(), String> {
+    trace!("Calling create with {:?}", args);
+    let cmd_args = args.cmd;
+    let title = &match cmd_args {
+        CommandArgs::Create { title } => title.join(" "),
+        _ => {
+            assert!(false);
+            String::new()
+        }
+    };
+    let author = &conf.get_str("strings.blog_author").unwrap();
+    let post_id = gen_id();
+    let date = chrono::Local::now().to_rfc2822();
+    let editor = conf.get_str("paths.editor_bin").unwrap();
+    let mut file = NamedTempFile::new().unwrap();
+    debug!("Temp file at {:?}", file.path());
+    write!(
+        file,
+        "Title: {title}
+Author: {author}
+Date: {date}
+ID: {post_id}
+
+Post body starts here
+",
+        title = title,
+        author = author,
+        post_id = post_id,
+        date = date,
+    )
+    .unwrap();
+    let mut proc = Command::new(editor)
+        .arg(file.path().to_str().unwrap())
+        .spawn()
+        .expect("Failed to execute parser command");
+    proc.wait().unwrap();
+    Ok(())
+}
+
 fn get_config() -> Result<Config, String> {
     let mut conf = Config::new();
     let ok = conf.merge(ConfigFile::with_name("src/config.default.toml"));
@@ -274,7 +323,7 @@ fn search_path(exe: &Path) -> Option<PathBuf> {
 fn normalize_config(conf: &mut Config) -> Result<(), String> {
     // Find various executables. First search in the current working directory, then fall back to
     // searching the PATH
-    for key in ["paths.parse_bin"].iter() {
+    for key in ["paths.parse_bin", "paths.editor_bin"].iter() {
         let value = conf.get_str(key).unwrap();
         let s = Path::new(&value);
         let final_s = if s.is_file() {
@@ -340,12 +389,9 @@ fn main() -> Result<(), String> {
     normalize_config(&mut conf)?;
     ensure_dirs(&conf)?;
 
-    let d = chrono::Local::now();
-    debug!("{:?}", d);
-    debug!("{:?}", d.to_rfc2822());
-
     match args.cmd {
         CommandArgs::Init { .. } => init(args, conf),
         CommandArgs::Build { .. } => build(args, conf),
+        CommandArgs::Create { .. } => create(args, conf),
     }
 }
