@@ -337,8 +337,8 @@ fn normalize_config(conf: &mut Config) -> Result<(), String> {
             }
             s.unwrap().to_str().unwrap().to_string()
         };
-        debug!("Found {:?} for parse_bin", final_s);
-        conf.set::<String>("paths.parse_bin", final_s).unwrap();
+        debug!("Found {:?} for {}", final_s, key);
+        conf.set::<String>(key, final_s).unwrap();
     }
     Ok(())
 }
