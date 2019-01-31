@@ -28,8 +28,16 @@ impl File {
     pub fn new_from_buf(
         buf: Box<BufRead>,
         last_modified: Option<SystemTime>,
-        opts: Option<FileOpts>,
+        opts_in: Option<FileOpts>,
     ) -> Result<Self, PostParseError> {
+        // If no FileOpts was given, set the default options
+        let opts = if opts_in.is_none() {
+            FileOpts {
+                strict_headers: true,
+            }
+        } else {
+            opts_in.unwrap()
+        };
         let mut f = Self::new();
         let mut all_lines = vec![];
         let mut body_lines = vec![];
@@ -58,7 +66,7 @@ impl File {
         if last_modified.is_some() {
             f.set_last_modified(last_modified.unwrap());
         }
-        let err = if opts.is_some() && opts.unwrap().strict_headers {
+        let err = if opts.strict_headers {
             f.has_required_headers()
         } else {
             Ok(())
@@ -116,17 +124,28 @@ impl File {
     //    self.last_modified
     //}
 
-    pub fn get_long_rendered_filename(&self) -> String {
-        let mut s = self
-            .get_header("title")
+    fn hyphenated_title_for_filename(&self, len: usize) -> String {
+        self.get_header("title")
             .unwrap()
             .to_lowercase()
             .split(' ')
-            .collect::<Vec<&str>>()[0..3]
-            .join("-");
+            .collect::<Vec<&str>>()[0..len]
+            .join("-")
+    }
+
+    pub fn get_long_rendered_filename(&self) -> String {
+        let mut s = self.hyphenated_title_for_filename(3);
         s += "-";
         s += &self.get_header("id").unwrap();
         s += ".html";
+        s
+    }
+
+    pub fn get_suggested_source_filename(&self) -> String {
+        let mut s = self.hyphenated_title_for_filename(3);
+        s += "-";
+        s += &self.get_header("id").unwrap();
+        s += ".reb";
         s
     }
 }

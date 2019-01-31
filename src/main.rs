@@ -13,10 +13,11 @@ extern crate rand;
 extern crate tempfile;
 
 use std::fs::{copy, create_dir_all, metadata, File, OpenOptions};
-use std::io::{BufReader, Write};
+use std::io::{BufReader, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use chrono::Datelike;
 use config::Config;
 use config::File as ConfigFile;
 use structopt::StructOpt;
@@ -56,6 +57,7 @@ enum CommandArgs {
     /// Compose a new blog post
     Create {
         /// The title of the post
+        #[structopt(required = true)]
         title: Vec<String>,
     },
 }
@@ -292,6 +294,24 @@ Post body starts here
         .spawn()
         .expect("Failed to execute parser command");
     proc.wait().unwrap();
+    file.seek(SeekFrom::Start(0)).unwrap();
+    let mod_time = metadata(&file.path()).unwrap().modified().unwrap();
+    let buf = BufReader::new(file);
+    let pf = PostFile::new_from_buf(Box::new(buf), Some(mod_time), None).unwrap();
+    let date = chrono::DateTime::parse_from_rfc2822(&pf.get_header("date").unwrap()).unwrap();
+    let out_fname = Path::new(&conf.get_str("paths.post_dname").unwrap())
+        .join(&date.year().to_string())
+        .join(&date.month().to_string())
+        .join(pf.get_suggested_source_filename());
+    info!("Saving post to {}", out_fname.to_str().unwrap());
+    create_dir_all(out_fname.parent().unwrap()).unwrap();
+    let mut fd = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(&out_fname)
+        .unwrap();
+    write!(fd, "{}", pf.to_string()).unwrap();
     Ok(())
 }
 
