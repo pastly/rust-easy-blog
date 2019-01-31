@@ -301,7 +301,11 @@ Post body starts here
     let date = chrono::DateTime::parse_from_rfc2822(&pf.get_header("date").unwrap()).unwrap();
     let out_fname = Path::new(&conf.get_str("paths.post_dname").unwrap())
         .join(&date.year().to_string())
-        .join(&date.month().to_string())
+        .join(&if date.month() < 10 {
+            format!("0{}", date.month())
+        } else {
+            date.month().to_string()
+        })
         .join(pf.get_suggested_source_filename());
     info!("Saving post to {}", out_fname.to_str().unwrap());
     create_dir_all(out_fname.parent().unwrap()).unwrap();
